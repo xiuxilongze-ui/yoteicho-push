@@ -1,0 +1,33 @@
+# Render 用の設定ファイル（Blueprint）
+# 使い方: GitHub にこのフォルダを上げ、Render で "New > Blueprint" から選ぶだけ。
+#
+# ⚠️ 重要: Render の無料プランは一定時間でスリープし、その間は通知が送れません。
+#    通知を確実に動かすには plan: starter（有料）＋ disk が必要です。
+#    disk を使うには有料プランが必須です（無料プランではディスクを付けられません）。
+
+services:
+  - type: web
+    name: yoteicho-push
+    runtime: node
+    plan: starter                # 無料で試すなら free（スリープします）
+    region: singapore            # 日本に近いリージョン
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATA_DIR
+        value: /var/data
+      - key: VAPID_SUBJECT
+        value: mailto:you@example.com
+      # 事前に `npm run vapid` で作った鍵を登録すると、再デプロイでも購読が消えません
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+    disk:
+      name: yoteicho-data
+      mountPath: /var/data
+      sizeGB: 1

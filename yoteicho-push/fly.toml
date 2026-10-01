@@ -1,0 +1,45 @@
+# Fly.io 設定ファイル
+# 使い方:
+#   1. app の名前を世界で唯一のものに変える（半角英数とハイフン）
+#   2. fly volumes create yoteicho_data --size 1 --region nrt
+#   3. fly deploy
+
+app = "yoteicho-push-CHANGE-ME"
+primary_region = "nrt"          # 東京。米国なら "sjc"、欧州なら "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3000"
+  DATA_DIR = "/data"
+  # 通知の送信元。自分のメールアドレスに変えてください。
+  VAPID_SUBJECT = "mailto:you@example.com"
+  # ↓ 事前に `npm run vapid` で作った鍵を貼ると、再デプロイしても購読が消えません。
+  #   fly secrets set VAPID_PUBLIC_KEY="..." VAPID_PRIVATE_KEY="..."
+  #   （secrets に入れる場合はここに書かなくて構いません）
+
+# 通知サーバーは「常時起動」が必須です。
+# auto_stop_machines = false と min_machines_running = 1 でスリープを防ぎます。
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+# 購読情報とVAPID鍵を永続化するディスク
+[[mounts]]
+  source = "yoteicho_data"
+  destination = "/data"
